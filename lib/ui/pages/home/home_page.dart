@@ -1,10 +1,10 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:task_for_job/common/config/extensions.dart';
 import 'package:task_for_job/common/constants/colors.dart';
-import 'package:task_for_job/common/constants/icons.dart';
+import 'package:task_for_job/ui/pages/home/bloc/map_bloc.dart';
 import 'package:yandex_mapkit/yandex_mapkit.dart';
 
 class HomePage extends StatefulWidget {
@@ -17,45 +17,17 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage>
     with SingleTickerProviderStateMixin {
   final Completer<YandexMapController> _controller = Completer();
-  late AnimationController _animationController;
-  late Animation<double> _animation;
-  List<MapObject> mapObjects = [];
   final ValueNotifier<bool> isScrolled = ValueNotifier(false);
-
-  static final _icon = PlacemarkIcon.single(
-    PlacemarkIconStyle(
-      image: BitmapDescriptor.fromAssetImage(
-        AppIcons.userIcon,
-      ),
-      anchor: const Offset(0.5, 1),
-    ),
-  );
+  late final MapBloc _bloc;
 
   @override
   void initState() {
     super.initState();
-    getLocationPermission();
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 200),
-    );
-    _animation = Tween<double>(begin: 0, end: 30).animate(_animationController);
-    isScrolled.addListener(() async {
-      if (isScrolled.value) {
-        _animationController.forward();
-      } else {
-        _animationController.reverse();
-      }
-    });
+    _bloc = MapBloc();
+    getLocation();
   }
 
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
-  }
-
-  Future<void> getLocationPermission() async {
+  Future<void> getLocation() async {
     LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied ||
         permission == LocationPermission.deniedForever) {
@@ -65,31 +37,20 @@ class _HomePageState extends State<HomePage>
         permission == LocationPermission.always) {
       final controller = await _controller.future;
       final position = await Geolocator.getCurrentPosition();
+      _bloc.add(const MapEvent.scrollStarted());
       await controller.moveCamera(
         CameraUpdate.newCameraPosition(
           CameraPosition(target: position.toPoint()),
         ),
         animation: const MapAnimation(duration: 3),
       );
+      _bloc.add(MapEvent.changeByMap(position.toPoint()));
     }
   }
 
   void _onMapCreated(YandexMapController controller) {
-    controller.toggleUserLayer(visible: true);
     _controller.complete(controller);
-  }
-
-  Future<UserLocationView> _onUserLocationAdded(UserLocationView view) async {
-    return view.copyWith(
-      pin: view.pin.copyWith(
-        icon: _icon,
-        opacity: 1,
-      ),
-      accuracyCircle: view.accuracyCircle.copyWith(
-        strokeColor: Colors.transparent,
-        fillColor: Colors.transparent,
-      ),
-    );
+    controller.toggleUserLayer(visible: true);
   }
 
   // Future<String> _getAddress(Point point) async {
@@ -111,147 +72,193 @@ class _HomePageState extends State<HomePage>
   // }
 
   @override
+  void dispose() {
+    super.dispose();
+    _bloc.close();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          children: [
-            const Spacer(
-              flex: 2,
-            ),
-            Expanded(
-              flex: 5,
-              child: DecoratedBox(
-                decoration: const BoxDecoration(
-                  borderRadius: BorderRadius.all(
-                    Radius.circular(20),
+    return BlocProvider.value(
+      value: _bloc,
+      child: Scaffold(
+        body: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            children: [
+              const Expanded(
+                flex: 2,
+                child: Text("data"),
+              ),
+              Expanded(
+                flex: 5,
+                child: DecoratedBox(
+                  decoration: const BoxDecoration(
+                    borderRadius: BorderRadius.all(
+                      Radius.circular(20),
+                    ),
                   ),
-                ),
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.all(
-                    Radius.circular(20),
-                  ),
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      ValueListenableBuilder(
-                        valueListenable: isScrolled,
-                        builder: (context, value, child) {
-                          return YandexMap(
-                            mapObjects: mapObjects,
-                            logoAlignment: const MapAlignment(
-                              horizontal: HorizontalAlignment.left,
-                              vertical: VerticalAlignment.bottom,
-                            ),
-                            onUserLocationAdded: _onUserLocationAdded,
-                            onMapCreated: _onMapCreated,
-                            tiltGesturesEnabled: false,
-                            onCameraPositionChanged: (
-                              cameraPosition,
-                              reason,
-                              finished,
-                            ) {
-                              if (reason == CameraUpdateReason.gestures) {
-                                if (finished) {
-                                  mapObjects.add(
-                                    PlacemarkMapObject(
-                                      mapId: const MapObjectId("current"),
-                                      point: cameraPosition.target,
-                                      icon: PlacemarkIcon.single(
-                                        PlacemarkIconStyle(
-                                            image:
-                                                BitmapDescriptor.fromAssetImage(
-                                              AppIcons.userIconBlue,
-                                            ),
-                                            scale: 1.2,
-                                            anchor: const Offset(0.5, 1)),
-                                      ),
-                                    ),
-                                  );
-                                } else {
-                                  mapObjects.clear();
-                                }
-                                isScrolled.value = !finished;
-                              }
-                            },
-                          );
-                        },
-                      ),
-                      ValueListenableBuilder(
-                          valueListenable: isScrolled,
-                          builder: (context, value, child) {
-                            return value
-                                ? ShaderMask(
-                                    shaderCallback: (bounds) {
-                                      return const LinearGradient(
-                                        colors: [
-                                          Colors.black26,
-                                          Colors.black26,
-                                        ],
-                                      ).createShader(bounds);
-                                    },
-                                    child: const SizedBox.expand(
-                                      child: ColoredBox(
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  )
-                                : const SizedBox.shrink();
-                          }),
-                      Center(
-                        child: AnimatedBuilder(
-                          animation: _animation,
-                          builder: (context, child) {
-                            return Transform.translate(
-                              offset: Offset(0, -_animation.value - 20),
-                              child: child,
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.all(
+                      Radius.circular(20),
+                    ),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        YandexMap(
+                          logoAlignment: const MapAlignment(
+                            horizontal: HorizontalAlignment.left,
+                            vertical: VerticalAlignment.bottom,
+                          ),
+                          onMapCreated: _onMapCreated,
+                          tiltGesturesEnabled: false,
+                          onCameraPositionChanged:
+                              (cameraPosition, reason, finished) {
+                            if (finished) {
+                              _bloc.add(
+                                MapEvent.changeByMap(cameraPosition.target),
+                              );
+                            } else {
+                              _bloc.add(const MapEvent.scrollStarted());
+                            }
+                          },
+                        ),
+                        BlocBuilder<MapBloc, MapState>(
+                          builder: (context, state) {
+                            return state.maybeMap(
+                              orElse: () => const SizedBox.shrink(),
+                              hasScroll: (value) => ShaderMask(
+                                shaderCallback: (bounds) {
+                                  return const LinearGradient(
+                                    colors: [
+                                      Colors.black26,
+                                      Colors.black26,
+                                    ],
+                                  ).createShader(bounds);
+                                },
+                                child: const SizedBox.expand(
+                                  child: ColoredBox(
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
                             );
                           },
-                          child: ValueListenableBuilder(
-                            valueListenable: isScrolled,
-                            builder: (context, value, child) {
-                              return Opacity(
-                                opacity: value ? 1 : 0,
-                                child: Image.asset(
-                                  AppIcons.userIcon,
-                                  width: 30,
-                                  fit: BoxFit.fitWidth,
-                                ),
+                        ),
+                        Center(
+                          child: BlocBuilder<MapBloc, MapState>(
+                            bloc: _bloc,
+                            builder: (context, state) {
+                              return Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    width: 5,
+                                    height: 40,
+                                    decoration: const BoxDecoration(
+                                      color: AppColors.black,
+                                      borderRadius: BorderRadius.all(
+                                        Radius.circular(30),
+                                      ),
+                                    ),
+                                    transform: Matrix4.translationValues(
+                                        0,
+                                        state.maybeMap(
+                                          orElse: () => 30,
+                                          hasScroll: (value) => 10,
+                                        ),
+                                        0),
+                                  ),
+                                  AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.all(
+                                        Radius.circular(
+                                          state.maybeMap(
+                                            orElse: () => 10,
+                                            hasScroll: (value) => 30,
+                                          ),
+                                        ),
+                                      ),
+                                      color: AppColors.primary,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: AppColors.black,
+                                          blurRadius: 9,
+                                          spreadRadius: state.maybeMap(
+                                            orElse: () => -13,
+                                            hasScroll: (value) => -15,
+                                          ),
+                                          offset: const Offset(0, 45),
+                                        )
+                                      ],
+                                    ),
+                                    transform: Matrix4.translationValues(
+                                      0,
+                                      state.maybeMap(
+                                        orElse: () => 0,
+                                        hasScroll: (value) => -10,
+                                      ),
+                                      0,
+                                    ),
+                                    child: AnimatedSwitcher(
+                                      duration: const Duration(seconds: 1),
+                                      child: state.map(
+                                        hasScroll: (value) =>
+                                            const Icon(Icons.more_horiz),
+                                        loading: (value) => const Padding(
+                                          padding: EdgeInsets.all(8.0),
+                                          child: CircularProgressIndicator(),
+                                        ),
+                                        success: (value) =>
+                                            const Icon(Icons.check),
+                                        error: (value) =>
+                                            const Icon(Icons.error_outline),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               );
-                            }
-                          ),
-                        ),
-                      ),
-                      Align(
-                        alignment: Alignment.bottomRight,
-                        child: Padding(
-                          padding: const EdgeInsets.all(24.0),
-                          child: FloatingActionButton(
-                            onPressed: () async {
-                              final controller = await _controller.future;
-                              final position =
-                                  await controller.getUserCameraPosition();
-                              if (position != null) {
-                                await controller.moveCamera(
-                                  CameraUpdate.newCameraPosition(
-                                      position.copyWith(zoom: 15)),
-                                  animation: const MapAnimation(),
-                                );
-                              }
                             },
-                            backgroundColor: AppColors.white,
-                            child: const Icon(Icons.gps_fixed),
                           ),
                         ),
-                      ),
-                    ],
+                        Align(
+                          alignment: Alignment.bottomRight,
+                          child: Padding(
+                            padding: const EdgeInsets.all(24.0),
+                            child: FloatingActionButton(
+                              onPressed: () async {
+                                isScrolled.value = true;
+                                await getLocation();
+                                isScrolled.value = false;
+                              },
+                              backgroundColor: AppColors.white,
+                              child: const Icon(Icons.gps_fixed),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-            const Spacer(),
-          ],
+              Expanded(
+                child: Center(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: AppColors.white,
+                        maximumSize: Size.infinite),
+                    onPressed: () {},
+                    child: const Text("Tasdiqlash"),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
