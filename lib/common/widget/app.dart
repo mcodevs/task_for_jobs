@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:task_for_job/common/config/route.dart';
+import 'package:task_for_job/common/constants/colors.dart';
 
 class App extends StatelessWidget {
   const App({super.key});
@@ -10,6 +11,11 @@ class App extends StatelessWidget {
       title: "Job Task",
       debugShowCheckedModeBanner: false,
       routes: AppRoutes.routes,
+      initialRoute: AppRoutes.changeLocation,
+      theme: ThemeData(
+        useMaterial3: true,
+        scaffoldBackgroundColor: AppColors.dark
+      ),
     );
   }
 }
