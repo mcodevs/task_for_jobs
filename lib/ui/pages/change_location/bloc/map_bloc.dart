@@ -26,9 +26,7 @@ class MapBloc extends Bloc<MapEvent, MapState> {
     );
   }
 
-  void _onStarted(_Started value, Emitter<MapState> emit) async {
-    try {} catch (e) {}
-  }
+  void _onStarted(_Started value, Emitter<MapState> emit) async {}
 
   void _onChangeByMap(_ChangeByMap value, Emitter<MapState> emit) async {
     try {
@@ -43,16 +41,18 @@ class MapBloc extends Bloc<MapEvent, MapState> {
           ),
         ),
       );
-    } catch (e) {}
+    } catch (e) {
+      emit(MapState.error(e.toString()));
+    }
   }
 
-  void _onChangeByAddress(_ChangeByAddress value, Emitter<MapState> emit) {
-    try {} catch (e) {}
-  }
+  void _onChangeByAddress(_ChangeByAddress value, Emitter<MapState> emit) {}
 
   void _onScrollStarted(_ScrollStarted value, Emitter<MapState> emit) {
     try {
       emit(const MapState.hasScroll());
-    } catch (e) {}
+    } catch (e) {
+      emit(MapState.error(e.toString()));
+    }
   }
 }

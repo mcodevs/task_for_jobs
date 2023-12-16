@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:task_for_job/common/config/route.dart';
 import 'package:task_for_job/common/constants/colors.dart';
 import 'package:task_for_job/ui/pages/change_location/bloc/map_bloc.dart';
-import 'package:task_for_job/ui/pages/change_location/models/map_model.dart';
+import 'package:task_for_job/ui/pages/change_location/widgets/custom_dialog.dart';
 import 'package:yandex_mapkit/yandex_mapkit.dart';
 
 class MapWidget extends StatefulWidget {
@@ -65,8 +65,8 @@ class _MapWidgetState extends State<MapWidget> {
                 onCameraPositionChanged: (cameraPosition, reason, finished) {
                   if (finished) {
                     context.read<MapBloc>().add(
-                          MapEvent.changeByMap(cameraPosition.target),
-                        );
+                      MapEvent.changeByMap(cameraPosition.target),
+                    );
                   } else {
                     context.read<MapBloc>().add(const MapEvent.scrollStarted());
                   }
@@ -74,28 +74,30 @@ class _MapWidgetState extends State<MapWidget> {
               ),
             ),
             BlocBuilder<MapBloc, MapState>(
-              builder: (context, state) => state.maybeMap(
-                orElse: () => const SizedBox.shrink(),
-                hasScroll: (value) => ShaderMask(
-                  shaderCallback: (bounds) {
-                    return const LinearGradient(
-                      colors: [
-                        Colors.black26,
-                        Colors.black26,
-                      ],
-                    ).createShader(bounds);
-                  },
-                  child: const SizedBox.expand(
-                    child: ColoredBox(
-                      color: Colors.white,
-                    ),
+              builder: (context, state) =>
+                  state.maybeMap(
+                    orElse: () => const SizedBox.shrink(),
+                    hasScroll: (value) =>
+                        ShaderMask(
+                          shaderCallback: (bounds) {
+                            return const LinearGradient(
+                              colors: [
+                                Colors.black26,
+                                Colors.black26,
+                              ],
+                            ).createShader(bounds);
+                          },
+                          child: const SizedBox.expand(
+                            child: ColoredBox(
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
                   ),
-                ),
-              ),
             ),
             Positioned(
               top: 0,
-              height: 80,
+              height: 90,
               right: 0,
               left: 0,
               child: DecoratedBox(
@@ -106,18 +108,17 @@ class _MapWidgetState extends State<MapWidget> {
                   child: Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: Builder(builder: (context) {
-                      final arguments = (ModalRoute.of(context)
-                              ?.settings
-                              .arguments as Map?) ??
-                          {};
+                      final title = AppRoutes.homeKey.currentState?.current ??
+                          "";
                       return TextField(
                         controller: _controller,
+                        maxLines: 1,
                         decoration: InputDecoration(
                           border: const UnderlineInputBorder(
                             borderSide: BorderSide.none,
                           ),
                           floatingLabelAlignment: FloatingLabelAlignment.start,
-                          labelText: arguments['title'] ?? "Qayerdan:",
+                          labelText: title,
                         ),
                       );
                     }),
@@ -132,9 +133,9 @@ class _MapWidgetState extends State<MapWidget> {
                     hasScroll: (value) => _controller.text = "Manzilni tanlang",
                     loading: (value) => _controller.text = "Qidirilmoqda...",
                     success: (value) =>
-                        _controller.text = value.address.address,
+                    _controller.text = value.address.address,
                     error: (value) =>
-                        _controller.text = "Xatolik yuz berdi. Qayta urining!",
+                    _controller.text = "Xatolik yuz berdi. Qayta urining!",
                   );
                 },
                 builder: (context, state) {
@@ -197,7 +198,8 @@ class _MapWidgetState extends State<MapWidget> {
                           duration: const Duration(seconds: 1),
                           child: state.map(
                             hasScroll: (value) => const Icon(Icons.more_horiz),
-                            loading: (value) => const Padding(
+                            loading: (value) =>
+                            const Padding(
                               padding: EdgeInsets.all(8.0),
                               child: CircularProgressIndicator(
                                 color: AppColors.white,
@@ -233,7 +235,7 @@ class _MapWidgetState extends State<MapWidget> {
               alignment: Alignment.topRight,
               child: Padding(
                 padding: const EdgeInsets.symmetric(
-                  vertical: 100,
+                  vertical: 110,
                   horizontal: 24,
                 ),
                 child: BlocBuilder<MapBloc, MapState>(
@@ -270,72 +272,4 @@ class _MapWidgetState extends State<MapWidget> {
   }
 }
 
-class CustomDialog extends StatefulWidget {
-  const CustomDialog({
-    super.key,
-    required this.model,
-  });
 
-  final MapModel model;
-
-  @override
-  State<CustomDialog> createState() => _CustomDialogState();
-}
-
-class _CustomDialogState extends State<CustomDialog> {
-  late TextEditingController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController(text: widget.model.address);
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-    _controller.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Dialog(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            height: 300,
-            width: 300,
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Center(
-                child: TextField(
-                  controller: _controller,
-                ),
-              ),
-            ),
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text("Orqaga"),
-              ),
-              TextButton(
-                onPressed: () async {
-                  await Hive.box("locations").put(
-                    widget.model.id,
-                    widget.model.copyWith(address: _controller.text),
-                  );
-                  if (mounted) Navigator.pop(context);
-                },
-                child: const Text("Saqlash"),
-              )
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}

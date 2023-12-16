@@ -9,11 +9,13 @@ class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  State<HomePage> createState() => HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class HomePageState extends State<HomePage> {
   late final HomeCubit _cubit;
+
+  String current = "";
 
   @override
   void initState() {
@@ -42,10 +44,11 @@ class _HomePageState extends State<HomePage> {
                   children: [
                     const Spacer(),
                     CustomElevatedButton(
-                      childText: data.first?.address ?? "Qayerdan?",
+                      childText: data.first?.address ?? HomeCubit.from,
                       backgroundColor: AppColors.white,
                       foregroundColor: AppColors.black,
                       onPressed: () async {
+                        current = HomeCubit.from;
                         final model = await Navigator.pushNamed(
                             context, AppRoutes.savedLocations);
                         if (model != null && model is MapModel) {
@@ -53,12 +56,21 @@ class _HomePageState extends State<HomePage> {
                         }
                       },
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox.square(
+                      dimension: 60,
+                      child: Center(
+                        child: Icon(
+                          Icons.arrow_downward,
+                          color: AppColors.white,
+                        ),
+                      ),
+                    ),
                     CustomElevatedButton(
-                      childText: data.second?.address ?? "Qayerga?",
+                      childText: data.second?.address ?? HomeCubit.to,
                       backgroundColor: AppColors.white,
                       foregroundColor: AppColors.black,
                       onPressed: () async {
+                        current = HomeCubit.to;
                         final model = await Navigator.pushNamed(
                             context, AppRoutes.savedLocations);
                         if (model != null && model is MapModel) {

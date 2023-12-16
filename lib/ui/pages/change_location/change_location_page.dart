@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:task_for_job/common/config/extensions.dart';
 import 'package:task_for_job/common/services/implements/geocoder_implement.dart';
+import 'package:task_for_job/ui/functions/snackbar.dart';
 import 'package:task_for_job/ui/pages/change_location/bloc/map_bloc.dart';
 import 'package:task_for_job/ui/pages/change_location/widgets/custom_back_button.dart';
 import 'package:task_for_job/ui/pages/change_location/widgets/custom_elevated_button.dart';
@@ -44,16 +45,24 @@ class _ChangeLocationPageState extends State<ChangeLocationPage> {
   }
 
   Future<void> _getLocation() async {
-    final controller = await _controller.future;
-    _bloc.add(const MapEvent.scrollStarted());
-    final position = (await Geolocator.getLastKnownPosition()) ??
-        await Geolocator.getCurrentPosition();
-    await controller.moveCamera(
-      CameraUpdate.newCameraPosition(
-        CameraPosition(target: position.toPoint()),
-      ),
-      animation: const MapAnimation(duration: 3),
-    );
+    try {
+      final controller = await _controller.future;
+      final position = (await Geolocator.getLastKnownPosition()) ??
+          await Geolocator.getCurrentPosition();
+      await controller.moveCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(target: position.toPoint()),
+        ),
+        animation: const MapAnimation(duration: 3),
+      );
+    } on LocationServiceDisabledException {
+      if (mounted) {
+        showSnackBar(
+          context: context,
+          text: "GPS service is disabled",
+        );
+      }
+    }
   }
 
   void _onMapCreated(YandexMapController controller) =>

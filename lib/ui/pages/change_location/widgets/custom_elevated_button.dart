@@ -35,6 +35,8 @@ class CustomElevatedButton extends StatelessWidget {
           onPressed: onPressed,
           child: Text(
             childText,
+            maxLines: 2,
+            textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: 18,
             ),
