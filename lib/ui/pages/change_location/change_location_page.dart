@@ -3,9 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:task_for_job/common/config/extensions.dart';
-import 'package:task_for_job/common/constants/colors.dart';
 import 'package:task_for_job/common/services/implements/geocoder_implement.dart';
 import 'package:task_for_job/ui/pages/change_location/bloc/map_bloc.dart';
+import 'package:task_for_job/ui/pages/change_location/widgets/custom_back_button.dart';
+import 'package:task_for_job/ui/pages/change_location/widgets/custom_elevated_button.dart';
 import 'package:task_for_job/ui/pages/change_location/widgets/map_widget.dart';
 import 'package:yandex_mapkit/yandex_mapkit.dart';
 
@@ -25,7 +26,9 @@ class _ChangeLocationPageState extends State<ChangeLocationPage> {
   void initState() {
     super.initState();
     _bloc = MapBloc(repository: GeocoderImpl());
-    _getLocationPermissionAndMove();
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
+      await _getLocationPermissionAndMove();
+    });
   }
 
   Future<void> _getLocationPermissionAndMove() async {
@@ -42,15 +45,15 @@ class _ChangeLocationPageState extends State<ChangeLocationPage> {
 
   Future<void> _getLocation() async {
     final controller = await _controller.future;
-    final position = await Geolocator.getCurrentPosition();
     _bloc.add(const MapEvent.scrollStarted());
+    final position = (await Geolocator.getLastKnownPosition()) ??
+        await Geolocator.getCurrentPosition();
     await controller.moveCamera(
       CameraUpdate.newCameraPosition(
         CameraPosition(target: position.toPoint()),
       ),
       animation: const MapAnimation(duration: 3),
     );
-    _bloc.add(MapEvent.changeByMap(position.toPoint()));
   }
 
   void _onMapCreated(YandexMapController controller) =>
@@ -74,30 +77,8 @@ class _ChangeLocationPageState extends State<ChangeLocationPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: FractionallySizedBox(
-                    alignment: Alignment.bottomLeft,
-                    widthFactor: 0.5,
-                    heightFactor: 0.8,
-                    child: FloatingActionButton.extended(
-                      backgroundColor: AppColors.white,
-                      foregroundColor: AppColors.black,
-                      label: const Text(
-                        "Ortga qaytish",
-                        style: TextStyle(fontSize: 14),
-                      ),
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.vertical(
-                          top: Radius.circular(20),
-                          bottom: Radius.zero,
-                        ),
-                      ),
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                      icon: const BackButtonIcon(),
-                    ),
-                  ),
+                const Expanded(
+                  child: CustomBackButton(),
                 ),
                 Expanded(
                   flex: 9,
@@ -106,32 +87,15 @@ class _ChangeLocationPageState extends State<ChangeLocationPage> {
                     getLocation: _getLocation,
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 10),
-                  child: Center(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: AppColors.white,
-                        minimumSize: const Size.fromHeight(60),
-                        maximumSize: const Size.fromHeight(60),
-                        shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.all(
-                            Radius.circular(20),
-                          ),
-                        ),
-                      ),
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                      child: const Text(
-                        "Tasdiqlash",
-                        style: TextStyle(
-                          fontSize: 18,
-                        ),
-                      ),
-                    ),
-                  ),
+                CustomElevatedButton(
+                  childText: "Tasdiqlash",
+                  onPressed: () {
+                    MapState state = _bloc.state;
+                    state.maybeMap(
+                      orElse: () {},
+                      success: (value) => Navigator.pop(context, value.address),
+                    );
+                  },
                 ),
               ],
             ),

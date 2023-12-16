@@ -11,7 +11,6 @@ class App extends StatelessWidget {
       title: "Job Task",
       debugShowCheckedModeBanner: false,
       routes: AppRoutes.routes,
-      initialRoute: AppRoutes.changeLocation,
       theme: ThemeData(
         useMaterial3: true,
         scaffoldBackgroundColor: AppColors.dark

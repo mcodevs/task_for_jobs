@@ -33,12 +33,13 @@ class MapBloc extends Bloc<MapEvent, MapState> {
   void _onChangeByMap(_ChangeByMap value, Emitter<MapState> emit) async {
     try {
       emit(const MapState.loading());
-      // final res = await _repository.getAddress(value.address);
+      final res = await _repository.getAddress(value.address);
       emit(
         MapState.success(
           MapModel(
-            address: "res",
-            point: value.address,
+            address: res,
+            latitude: value.address.latitude,
+            longitude: value.address.longitude,
           ),
         ),
       );

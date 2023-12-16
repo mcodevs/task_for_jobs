@@ -71,26 +71,24 @@ class _MapWidgetState extends State<MapWidget> {
               ),
             ),
             BlocBuilder<MapBloc, MapState>(
-              builder: (context, state) {
-                return state.maybeMap(
-                  orElse: () => const SizedBox.shrink(),
-                  hasScroll: (value) => ShaderMask(
-                    shaderCallback: (bounds) {
-                      return const LinearGradient(
-                        colors: [
-                          Colors.black26,
-                          Colors.black26,
-                        ],
-                      ).createShader(bounds);
-                    },
-                    child: const SizedBox.expand(
-                      child: ColoredBox(
-                        color: Colors.white,
-                      ),
+              builder: (context, state) => state.maybeMap(
+                orElse: () => const SizedBox.shrink(),
+                hasScroll: (value) => ShaderMask(
+                  shaderCallback: (bounds) {
+                    return const LinearGradient(
+                      colors: [
+                        Colors.black26,
+                        Colors.black26,
+                      ],
+                    ).createShader(bounds);
+                  },
+                  child: const SizedBox.expand(
+                    child: ColoredBox(
+                      color: Colors.white,
                     ),
                   ),
-                );
-              },
+                ),
+              ),
             ),
             Positioned(
               top: 0,
@@ -104,15 +102,20 @@ class _MapWidgetState extends State<MapWidget> {
                 child: Center(
                   child: Padding(
                     padding: const EdgeInsets.all(8.0),
-                    child: TextField(
-                      controller: _controller,
-                      decoration: const InputDecoration(
-                        border: UnderlineInputBorder(
-                          borderSide: BorderSide.none,
-                        ),
-                        floatingLabelAlignment: FloatingLabelAlignment.start,
-                        labelText: "Qayerdan:",
-                      ),
+                    child: Builder(
+                      builder: (context) {
+                        final arguments = (ModalRoute.of(context)?.settings.arguments as Map?) ?? {};
+                        return TextField(
+                          controller: _controller,
+                          decoration: InputDecoration(
+                            border: const UnderlineInputBorder(
+                              borderSide: BorderSide.none,
+                            ),
+                            floatingLabelAlignment: FloatingLabelAlignment.start,
+                            labelText: arguments['title'] ?? "Qayerdan:",
+                          ),
+                        );
+                      }
                     ),
                   ),
                 ),
@@ -192,7 +195,9 @@ class _MapWidgetState extends State<MapWidget> {
                             hasScroll: (value) => const Icon(Icons.more_horiz),
                             loading: (value) => const Padding(
                               padding: EdgeInsets.all(8.0),
-                              child: CircularProgressIndicator(),
+                              child: CircularProgressIndicator(
+                                color: AppColors.white,
+                              ),
                             ),
                             success: (value) => const Icon(Icons.check),
                             error: (value) => const Icon(Icons.error_outline),
@@ -207,11 +212,15 @@ class _MapWidgetState extends State<MapWidget> {
             Align(
               alignment: Alignment.bottomRight,
               child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: FloatingActionButton(
+                padding: const EdgeInsets.all(24),
+                child: FloatingActionButton.small(
+                  shape: const CircleBorder(),
                   onPressed: widget.getLocation,
                   backgroundColor: AppColors.white,
-                  child: const Icon(Icons.gps_fixed),
+                  child: const Icon(
+                    Icons.gps_fixed,
+                    size: 20,
+                  ),
                 ),
               ),
             ),

@@ -1,11 +1,35 @@
-import 'package:yandex_mapkit/yandex_mapkit.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:hive/hive.dart';
+import 'package:uuid/uuid.dart';
+part 'map_model.g.dart';
 
-class MapModel {
+@JsonSerializable()
+@HiveType(typeId: 1)
+class MapModel extends HiveObject {
+
+  @HiveField(0)
+  final String id;
+
+  @HiveField(1)
   final String address;
-  final Point point;
 
-  const MapModel({
+  @HiveField(2)
+  final double latitude;
+
+  @HiveField(3)
+  final double longitude;
+
+  MapModel({
+    String? id,
     required this.address,
-    required this.point,
-  });
+    required this.latitude,
+    required this.longitude,
+  }) : id = id ?? const Uuid().v4();
+
+  /// Connect the generated [_$PersonFromJson] function to the `fromJson`
+  /// factory.
+  factory MapModel.fromJson(Map<String, dynamic> json) => _$MapModelFromJson(json);
+
+  /// Connect the generated [_$PersonToJson] function to the `toJson` method.
+  Map<String, dynamic> toJson() => _$MapModelToJson(this);
 }

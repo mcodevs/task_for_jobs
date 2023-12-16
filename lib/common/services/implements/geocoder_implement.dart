@@ -1,3 +1,4 @@
+
 import 'package:task_for_job/common/constants/api_const.dart';
 import 'package:task_for_job/common/services/api_service.dart';
 import 'package:task_for_job/common/services/repository/geocoder_repository.dart';
@@ -26,13 +27,17 @@ final class GeocoderImpl implements GeocoderRepository {
   //   }
   // }
 
-
   @override
   Future<String> getAddress(Point point) async {
     final response = await _service.request<Map<String, Object?>>(
       queryParams: ApiConst.queryParams(point),
     );
-    print(response.data);
-    return response.data.toString();
+
+    final data = response.data ?? {};
+    final result = (data['response'] as Map)['GeoObjectCollection']['featureMember'][0]
+        ['GeoObject'];
+    final address =
+        result['metaDataProperty']['GeocoderMetaData']['text'] as String;
+    return address;
   }
 }
