@@ -1,6 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:hive/hive.dart';
 import 'package:uuid/uuid.dart';
+import 'package:yandex_mapkit/yandex_mapkit.dart';
 
 part 'map_model.g.dart';
 
@@ -11,13 +12,13 @@ class MapModel extends HiveObject {
   final String id;
 
   @HiveField(1)
-  final String address;
+  String address;
 
   @HiveField(2)
-  final double latitude;
+  double latitude;
 
   @HiveField(3)
-  final double longitude;
+  double longitude;
 
   MapModel({
     String? id,
@@ -35,11 +36,18 @@ class MapModel extends HiveObject {
     String? address,
     double? latitude,
     double? longitude,
-}) {
+  }) {
     return MapModel(
       address: address ?? this.address,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
+    );
+  }
+
+  Point toPoint() {
+    return Point(
+      latitude: latitude,
+      longitude: longitude,
     );
   }
 }

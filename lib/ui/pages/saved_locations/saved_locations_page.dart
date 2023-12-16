@@ -101,6 +101,38 @@ class _SavedLocationsPageState extends State<SavedLocationsPage> {
                                     color: AppColors.white,
                                   ),
                                 ),
+                                leading: PopupMenuButton(
+                                  iconColor: AppColors.white,
+                                  itemBuilder: (context) {
+                                    return [
+                                      PopupMenuItem(
+                                        child: const Text("Tahrirlash"),
+                                        onTap: () {
+                                          showDialog(
+                                            context: context,
+                                            builder: (context) {
+                                              return CustomEditDialog(
+                                                  data: data);
+                                            },
+                                          );
+                                        },
+                                      ),
+                                      PopupMenuItem(
+                                        child: const Text("O'chirish"),
+                                        onTap: () {
+                                          showDialog(
+                                            context: context,
+                                            builder: (context) {
+                                              return CustomAlertDialog(
+                                                data: data,
+                                              );
+                                            },
+                                          );
+                                        },
+                                      ),
+                                    ];
+                                  },
+                                ),
                                 trailing: state.maybeMap(
                                   orElse: () => null,
                                   successSaved: (value) =>
@@ -112,14 +144,6 @@ class _SavedLocationsPageState extends State<SavedLocationsPage> {
                                           : null,
                                 ),
                                 onTap: () => _cubit.addSuccessSaved(data),
-                                onLongPress: () {
-                                  showDialog(
-                                    context: context,
-                                    builder: (context) {
-                                      return CustomAlertDialog(data: data);
-                                    },
-                                  );
-                                },
                               );
                             },
                           );
@@ -159,6 +183,96 @@ class _SavedLocationsPageState extends State<SavedLocationsPage> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class CustomEditDialog extends StatefulWidget {
+  const CustomEditDialog({
+    required this.data,
+    super.key,
+  });
+
+  final MapModel data;
+
+  @override
+  State<CustomEditDialog> createState() => _CustomEditDialogState();
+}
+
+class _CustomEditDialogState extends State<CustomEditDialog> {
+  late final TextEditingController _controller;
+  MapModel? mapModel;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.data.address);
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _controller.dispose();
+  }
+
+  static const _border = OutlineInputBorder(
+    borderSide: BorderSide(
+      color: AppColors.black,
+      width: 5,
+    ),
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _controller,
+            decoration: const InputDecoration(
+              enabledBorder: _border,
+              focusedBorder: _border,
+            ),
+          ),
+          const SizedBox(height: 10),
+          ListTile(
+            title: const Text("Manzilni o'zgartirish"),
+            shape: _border,
+            onTap: () async {
+              mapModel = await Navigator.pushNamed(
+                context,
+                AppRoutes.changeLocation,
+              );
+            },
+            trailing: const Icon(Icons.chevron_right),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () async {
+            if(mapModel != null) {
+              widget.data.latitude = mapModel!.latitude;
+              widget.data.longitude = mapModel!.longitude;
+              await widget.data.save();
+
+            }
+            if(_controller.text != widget.data.address) {
+              widget.data.address = _controller.text;
+              await widget.data.save();
+            }
+            if(mounted) {
+              Navigator.pop(context);
+            }
+          },
+          child: const Text("Saqlash"),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text("Bekor qilish"),
+        ),
+      ],
     );
   }
 }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:task_for_job/ui/pages/change_location/widgets/custom_elevated_button.dart';
@@ -13,6 +15,7 @@ class WaysPage extends StatefulWidget {
 
 class _WaysPageState extends State<WaysPage> {
   late final WaysBloc _bloc;
+  final Completer<YandexMapController> _controller = Completer();
 
   @override
   void initState() {
@@ -34,17 +37,45 @@ class _WaysPageState extends State<WaysPage> {
         body: Stack(
           fit: StackFit.expand,
           children: [
-            BlocBuilder<WaysBloc, WaysState>(
+            BlocConsumer<WaysBloc, WaysState>(
+              listener: (context, state) {
+                state.map(
+                  initial: (value) {},
+                  loading: (value) async {
+                    final first =
+                        (value.objects.first as PlacemarkMapObject).point;
+                    final second =
+                        (value.objects.last as PlacemarkMapObject).point;
+                    final controller = await _controller.future;
+                    await controller.moveCamera(
+                      CameraUpdate.newBounds(
+                        BoundingBox(
+                          northEast: first,
+                          southWest: second,
+                        ),
+                      ),
+                      animation: const MapAnimation(),
+                    );
+                    await controller.moveCamera(
+                      CameraUpdate.zoomOut(),
+                      animation: const MapAnimation(),
+                    );
+                  },
+                  success: (value) {},
+                  error: (value) {},
+                );
+              },
               builder: (context, state) {
                 return YandexMap(
                   mapObjects: state.maybeMap(
                     orElse: () => [],
                     loading: (value) {
-                      print(value.objects);
                       return value.objects;
                     },
                     success: (value) => value.objects,
                   ),
+                  onMapCreated: (controller) =>
+                      _controller.complete(controller),
                 );
               },
             ),
