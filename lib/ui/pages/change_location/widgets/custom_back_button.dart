@@ -13,6 +13,7 @@ class CustomBackButton extends StatelessWidget {
       widthFactor: 0.5,
       heightFactor: 0.8,
       child: FloatingActionButton.extended(
+        heroTag: "0",
         backgroundColor: AppColors.white,
         foregroundColor: AppColors.black,
         label: const Text(

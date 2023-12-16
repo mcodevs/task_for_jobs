@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:task_for_job/common/constants/colors.dart';
 import 'package:task_for_job/ui/pages/change_location/bloc/map_bloc.dart';
+import 'package:task_for_job/ui/pages/change_location/models/map_model.dart';
 import 'package:yandex_mapkit/yandex_mapkit.dart';
 
 class MapWidget extends StatefulWidget {
@@ -40,6 +42,7 @@ class _MapWidgetState extends State<MapWidget> {
         borderRadius: BorderRadius.all(
           Radius.circular(20),
         ),
+        color: AppColors.white,
       ),
       child: ClipRRect(
         borderRadius: const BorderRadius.only(
@@ -102,21 +105,22 @@ class _MapWidgetState extends State<MapWidget> {
                 child: Center(
                   child: Padding(
                     padding: const EdgeInsets.all(8.0),
-                    child: Builder(
-                      builder: (context) {
-                        final arguments = (ModalRoute.of(context)?.settings.arguments as Map?) ?? {};
-                        return TextField(
-                          controller: _controller,
-                          decoration: InputDecoration(
-                            border: const UnderlineInputBorder(
-                              borderSide: BorderSide.none,
-                            ),
-                            floatingLabelAlignment: FloatingLabelAlignment.start,
-                            labelText: arguments['title'] ?? "Qayerdan:",
+                    child: Builder(builder: (context) {
+                      final arguments = (ModalRoute.of(context)
+                              ?.settings
+                              .arguments as Map?) ??
+                          {};
+                      return TextField(
+                        controller: _controller,
+                        decoration: InputDecoration(
+                          border: const UnderlineInputBorder(
+                            borderSide: BorderSide.none,
                           ),
-                        );
-                      }
-                    ),
+                          floatingLabelAlignment: FloatingLabelAlignment.start,
+                          labelText: arguments['title'] ?? "Qayerdan:",
+                        ),
+                      );
+                    }),
                   ),
                 ),
               ),
@@ -214,6 +218,7 @@ class _MapWidgetState extends State<MapWidget> {
               child: Padding(
                 padding: const EdgeInsets.all(24),
                 child: FloatingActionButton.small(
+                  heroTag: "1",
                   shape: const CircleBorder(),
                   onPressed: widget.getLocation,
                   backgroundColor: AppColors.white,
@@ -224,8 +229,112 @@ class _MapWidgetState extends State<MapWidget> {
                 ),
               ),
             ),
+            Align(
+              alignment: Alignment.topRight,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 100,
+                  horizontal: 24,
+                ),
+                child: BlocBuilder<MapBloc, MapState>(
+                  builder: (context, state) {
+                    return FloatingActionButton(
+                      heroTag: "2",
+                      shape: const CircleBorder(),
+                      onPressed: state.maybeMap(
+                        orElse: () => null,
+                        success: (value) {
+                          return () {
+                            showDialog(
+                              context: context,
+                              builder: (context) {
+                                return CustomDialog(
+                                  model: value.address,
+                                );
+                              },
+                            );
+                          };
+                        },
+                      ),
+                      backgroundColor: AppColors.white,
+                      child: const Icon(Icons.save),
+                    );
+                  },
+                ),
+              ),
+            ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class CustomDialog extends StatefulWidget {
+  const CustomDialog({
+    super.key,
+    required this.model,
+  });
+
+  final MapModel model;
+
+  @override
+  State<CustomDialog> createState() => _CustomDialogState();
+}
+
+class _CustomDialogState extends State<CustomDialog> {
+  late TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.model.address);
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _controller.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            height: 300,
+            width: 300,
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Center(
+                child: TextField(
+                  controller: _controller,
+                ),
+              ),
+            ),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("Orqaga"),
+              ),
+              TextButton(
+                onPressed: () async {
+                  await Hive.box("locations").put(
+                    widget.model.id,
+                    widget.model.copyWith(address: _controller.text),
+                  );
+                  if (mounted) Navigator.pop(context);
+                },
+                child: const Text("Saqlash"),
+              )
+            ],
+          ),
+        ],
       ),
     );
   }

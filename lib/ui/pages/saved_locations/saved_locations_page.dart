@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:task_for_job/common/config/route.dart';
 import 'package:task_for_job/common/constants/colors.dart';
+import 'package:task_for_job/ui/pages/change_location/models/map_model.dart';
 
 class SavedLocationsPage extends StatelessWidget {
   const SavedLocationsPage({super.key});
@@ -20,6 +21,10 @@ class SavedLocationsPage extends StatelessWidget {
                   style: TextStyle(
                     color: AppColors.white,
                   ),
+                ),
+                trailing: const Icon(
+                  Icons.chevron_right,
+                  color: AppColors.white,
                 ),
                 onTap: () {
                   Navigator.pushNamed(
@@ -46,14 +51,42 @@ class SavedLocationsPage extends StatelessWidget {
                         return ListView.builder(
                           itemCount: box.length,
                           itemBuilder: (context, index) {
-                            final data = box.getAt(index);
+                            final data = box.getAt(index) as MapModel;
                             return ListTile(
                               title: Text(
-                                data,
+                                data.address,
                                 style: const TextStyle(
                                   color: AppColors.white,
                                 ),
                               ),
+                              onTap: () {},
+                              onLongPress: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) {
+                                    return AlertDialog(
+                                      icon: const Text(
+                                          "Ma'lumotlar o'chirilsinmi?"),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () async {
+                                            await data.delete();
+                                            if (context.mounted) {
+                                              Navigator.pop(context);
+                                            }
+                                          },
+                                          child: const Text("Ha"),
+                                        ),
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.pop(context),
+                                          child: const Text("Yo'q"),
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                );
+                              },
                             );
                           },
                         );
